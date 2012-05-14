@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Kosenconf-054nara : kosenconf-054nara slides by jigsaw" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Kosenconf-054nara</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/e-jigsaw/kosenconf-054nara">View on GitHub</a>
+
+          <h1 id="project_title">Kosenconf-054nara</h1>
+          <h2 id="project_tagline">kosenconf-054nara slides by jigsaw</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/e-jigsaw/kosenconf-054nara/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/e-jigsaw/kosenconf-054nara/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>ものづくりとこうせん！</h1>
+
+<p>これは、5/12に奈良女子大学で開催された<a href="http://kosenconf.jp/?054nara">高専カンファレンスin奈良2</a>の発表資料のテクニカルなフォローアップです。</p>
+
+<p>全体の感想などは<a href="http://b-jigsaw.tumblr.com/kosenconf-054nara">高専カンファレンスin奈良2の感想とフォローアップ</a>に書きました。</p>
+
+<h2>動作環境</h2>
+
+<ul>
+<li>node.js v0.6.15</li>
+<li>(npm 1.1.16)</li>
+<li>express 2.5.9</li>
+<li>jade 0.25.0</li>
+<li>socket.io 0.9.6</li>
+<li>twitter 0.1.18</li>
+</ul><h2>動作方法</h2>
+
+<ol>
+<li>cloneするかzipをDL</li>
+<li>必要なパッケージをnpmから(package.jsonを書いておいた方がいいのかな？)(<code>npm install express jade socket.io twitter</code>)</li>
+<li>TwitterのでApplicationつくって<code>Consumerkey, Consumersecret, Accesstoken, Accesstokensecret</code>を<code>app.js</code>に書き換え</li>
+<li>実行(<code>node app.js</code>)</li>
+<li>ブラウザで(Chromeがオススメです)<code>localhost:3000</code>にアクセス</li>
+<li>→キーで次のシーンへ、会場参加型機能部分は2のアカウントにDMを送るとカウントされる</li>
+</ol><h2>解説</h2>
+
+<p>expressにひな形生成機構があるのでそれを使ってひな形を作って、それを適当に書き加えていくスタイルで作っていきました。</p>
+
+<pre><code>express -t jade
+</code></pre>
+
+<p>しましょう。jadeはテンプレートエンジンなので、好みで変えてもいいとおもいます。(ejsとか)</p>
+
+<p>今回はめんどくさかったので<code>index.jade</code>を空にして<code>layout.jade</code>にhtmlを書いていきました。</p>
+
+<p><code>/</code>にアクセスすると、ページを出力してTwitterからStreaming APIを読み込んできてWebsocketでブラウザ側に渡します。</p>
+
+<div class="highlight">
+<pre><span class="nx">tw</span><span class="p">.</span><span class="nx">stream</span><span class="p">(</span><span class="s1">'user'</span><span class="p">,</span> <span class="p">{},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">s</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// twitterからuserstreamを読んで</span>
+    <span class="nx">s</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'data'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">){</span>
+      <span class="k">if</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">direct_message</span> <span class="o">!==</span> <span class="kc">undefined</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// DMがきたら</span>
+        <span class="kd">var</span> <span class="nx">m</span> <span class="o">=</span> <span class="p">{</span> <span class="c1">// messageをつくる</span>
+          <span class="nx">type</span><span class="o">:</span> <span class="s1">'DM'</span><span class="p">,</span>
+          <span class="nx">body</span><span class="o">:</span> <span class="nx">d</span><span class="p">.</span><span class="nx">direct_message</span><span class="p">.</span><span class="nx">text</span>
+        <span class="p">};</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">direct_message</span><span class="p">);</span>
+        <span class="nx">io</span><span class="p">.</span><span class="nx">sockets</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">m</span><span class="p">));</span> <span class="c1">// Websocketにemitする</span>
+      <span class="p">}</span>
+    <span class="p">});</span>
+    <span class="nx">s</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'end'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">res</span><span class="p">){</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">res</span><span class="p">);</span>
+    <span class="p">});</span>
+    <span class="nx">s</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'destroy'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">res</span><span class="p">){</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">res</span><span class="p">);</span>
+    <span class="p">});</span>
+  <span class="p">});</span>
+</pre>
+</div>
+
+
+<p>この部分で会場参加型機能の部分を実装しています。同様に、</p>
+
+<div class="highlight">
+<pre><span class="nx">tw</span><span class="p">.</span><span class="nx">stream</span><span class="p">(</span><span class="s1">'statuses/filter'</span><span class="p">,</span> <span class="p">{</span><span class="s1">'track'</span><span class="o">:</span><span class="s1">'kosenconf'</span><span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">s</span><span class="p">){</span> <span class="c1">// kosenconfの含まれてるtweetのstream</span>
+    <span class="nx">s</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'data'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">){</span>
+      <span class="kd">var</span> <span class="nx">m</span> <span class="o">=</span> <span class="p">{</span> <span class="c1">// messageをつくる</span>
+        <span class="nx">type</span><span class="o">:</span> <span class="s1">'tw'</span><span class="p">,</span>
+        <span class="nx">body</span><span class="o">:</span> <span class="nx">d</span><span class="p">.</span><span class="nx">text</span><span class="p">,</span>
+        <span class="nx">user</span><span class="o">:</span> <span class="p">{</span>
+          <span class="nx">name</span><span class="o">:</span> <span class="nx">d</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">screen_name</span><span class="p">,</span>
+          <span class="nx">image</span><span class="o">:</span> <span class="nx">d</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">profile_image_url</span>
+        <span class="p">}</span>
+      <span class="p">};</span>
+      <span class="nx">io</span><span class="p">.</span><span class="nx">sockets</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">m</span><span class="p">));</span> <span class="c1">// Websocketにemit</span>
+    <span class="p">});</span>
+    <span class="nx">s</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'end'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">res</span><span class="p">){</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">res</span><span class="p">);</span>
+    <span class="p">});</span>
+    <span class="nx">s</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'destroy'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">res</span><span class="p">){</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">res</span><span class="p">);</span>
+    <span class="p">});</span>
+  <span class="p">});</span>
+</pre>
+</div>
+
+
+<p>この部分でTweetが流れる部分を実装しています。</p>
+
+<p>クライアント側<code>/public/javascripts/main.js</code>では</p>
+
+<div class="highlight">
+<pre><span class="nx">s</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'message'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">){</span> <span class="c1">// messageが送られてきたら</span>
+  <span class="nx">connect</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">m</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">d</span><span class="p">);</span> <span class="c1">// JSONで送っているのでパースして</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="s1">'tw'</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// tweetだったら</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s1">'body'</span><span class="p">).</span><span class="nx">append</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s1">'&lt;div /&gt;'</span><span class="p">,</span> <span class="p">{</span> <span class="c1">// tweetを画面に追加して</span>
+    <span class="kr">class</span><span class="o">:</span> <span class="s1">'tweet'</span><span class="p">,</span>
+    <span class="nx">css</span><span class="o">:</span> <span class="p">{</span>
+      <span class="nx">top</span><span class="o">:</span> <span class="nx">displayLiner</span><span class="p">.</span><span class="nx">returnCounter</span><span class="p">(),</span>
+      <span class="nx">left</span><span class="o">:</span> <span class="nx">$</span><span class="p">(</span><span class="nb">window</span><span class="p">).</span><span class="nx">width</span><span class="p">(),</span>
+    <span class="p">}</span>
+    <span class="p">}).</span><span class="nx">append</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s1">'&lt;img /&gt;'</span><span class="p">,</span> <span class="p">{</span>
+      <span class="kr">class</span><span class="o">:</span> <span class="s1">'userImage'</span><span class="p">,</span>
+      <span class="nx">src</span><span class="o">:</span> <span class="nx">m</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">image</span>
+    <span class="p">})).</span><span class="nx">append</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s1">'&lt;p /&gt;'</span><span class="p">,</span> <span class="p">{</span>
+      <span class="kr">class</span><span class="o">:</span> <span class="s1">'userName'</span><span class="p">,</span>
+      <span class="nx">html</span><span class="o">:</span> <span class="nx">m</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">name</span>
+    <span class="p">})).</span><span class="nx">append</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s1">'&lt;p /&gt;'</span><span class="p">,</span> <span class="p">{</span>
+      <span class="kr">class</span><span class="o">:</span> <span class="s1">'tweetBody'</span><span class="p">,</span>
+      <span class="nx">html</span><span class="o">:</span> <span class="nx">m</span><span class="p">.</span><span class="nx">body</span>
+    <span class="p">})).</span><span class="nx">animate</span><span class="p">({</span> <span class="c1">// アニメーションで流す</span>
+      <span class="nx">left</span><span class="o">:</span> <span class="o">-</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="nb">window</span><span class="p">).</span><span class="nx">width</span><span class="p">()</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+    <span class="p">},</span> <span class="mi">12000</span><span class="p">,</span> <span class="s1">'linear'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span>
+      <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">remove</span><span class="p">();</span>
+    <span class="p">}));</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="s1">'DM'</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// DMなら</span>
+    <span class="kd">var</span> <span class="nx">re</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">RegExp</span><span class="p">(</span><span class="s1">'[1-'</span><span class="o">+</span><span class="nx">choice</span><span class="p">.</span><span class="nx">max</span><span class="o">+</span><span class="s1">']'</span><span class="p">);</span> <span class="c1">// 適当に正規表現かけて</span>
+    <span class="k">if</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="nx">re</span><span class="p">))</span> <span class="p">{</span>
+      <span class="kd">var</span> <span class="nx">num</span> <span class="o">=</span> <span class="nb">parseInt</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">body</span><span class="p">);</span>
+      <span class="nx">choice</span><span class="p">.</span><span class="nx">ary</span><span class="p">[</span><span class="nx">num</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="c1">// 当該の番号を増やす</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s1">'.choice:eq('</span><span class="o">+</span><span class="p">(</span><span class="nx">num</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="s1">') &gt; .count'</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="nx">choice</span><span class="p">.</span><span class="nx">ary</span><span class="p">[</span><span class="nx">num</span><span class="p">]);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">});</span>
+</pre>
+</div>
+
+
+<p>識者の方に伺いたいのですが、Tweetを追加するあたりで<code>append()</code>をネストしまくってるんですがもっと上手い方法ないのでしょうか。出来ればjadeっぽく書きたいです。</p>
+
+<p>こんな感じでJavascriptが軽く書けるとこれぐらいのプログラムをすぐ作れるので便利です。</p>
+
+<p>これまでは、クライアント側だけの処理でよかったのでクライアント側のjsにプロットをベタ書きしていたのですが今回はサーバ側にシーン毎のデータを作って、それをjsonにしてクライアントに渡す、というようなことをしています。</p>
+
+<p>あとは特筆すべき点はないとおもいます、たぶん。</p>
+
+<p>うまいことライブラリみたいな感じにして公開してみたいなあ、ってぼんやりと考えています。</p>
+
+<p>もしなにかあれば<a href="http://twitter.com/neo6120">@neo6120</a>まで。</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Kosenconf-054nara maintained by <a href="https://github.com/e-jigsaw">e-jigsaw</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
